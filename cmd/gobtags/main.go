@@ -1,10 +1,13 @@
+//
+// Use of this source code is governed by The MIT License
+// that can be found in the LICENSE file.
+
 package main
 
 import (
-	"log"
-	"net"
-	"strconv"
+	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/iomz/golemu/config"
 	"github.com/iomz/golemu/connection"
 	"github.com/iomz/golemu/server"
@@ -13,40 +16,46 @@ import (
 )
 
 func main() {
-	cmd := kingpin.MustParse(config.App.Parse(os.Args[1:]))
+	// Set version
+	config.App.Version(config.Version)
+	parse := kingpin.MustParse(config.App.Parse(os.Args[1:]))
 
-	if *config.Debug {
+	// Set up logrus
+	log.SetLevel(log.InfoLevel)
+
+	cfg := config.GetConfig()
+	if cfg.Debug {
+		gin.SetMode(gin.DebugMode)
 		log.SetLevel(log.DebugLevel)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
 	}
 
-	var exitCode int
-	switch cmd {
+	switch parse {
 	case config.Client.FullCommand():
-		client := connection.NewClient(config.IP.String(), *config.Port)
-		exitCode = client.Run()
+		client := connection.NewClient(cfg.IP.String(), cfg.Port)
+		os.Exit(client.Run())
 	case config.Server.FullCommand():
 		srv := server.NewServer(
-			config.IP.String(),
-			*config.Port,
-			*config.APIPort,
-			*config.PDU,
-			*config.ReportInterval,
-			*config.KeepaliveInterval,
-			*config.InitialMessageID,
-			*config.File,
+			cfg.IP.String(),
+			cfg.Port,
+			cfg.APIPort,
+			cfg.PDU,
+			cfg.ReportInterval,
+			cfg.KeepaliveInterval,
+			cfg.InitialMessageID,
+			cfg.File,
 		)
-		exitCode = srv.Run()
+		os.Exit(srv.Run())
 	case config.Simulator.FullCommand():
 		sim := connection.NewSimulator(
-			config.IP.String(),
-			*config.Port,
-			*config.PDU,
-			*config.ReportInterval,
-			*config.SimulationDir,
-			*config.InitialMessageID,
+			cfg.IP.String(),
+			cfg.Port,
+			cfg.PDU,
+			cfg.ReportInterval,
+			cfg.SimulationDir,
+			cfg.InitialMessageID,
 		)
-		exitCode = sim.Run()
+		os.Exit(sim.Run())
 	}
-
-	os.Exit(exitCode)
 }
