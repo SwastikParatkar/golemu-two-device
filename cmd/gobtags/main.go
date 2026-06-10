@@ -5,7 +5,7 @@
 package main
 
 import (
-	"import os"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/iomz/golemu/config"
